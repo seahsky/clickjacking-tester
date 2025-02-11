@@ -107,18 +107,37 @@
                 return;
             }
 
+            // Ensure the URL is properly formatted
+            let url;
+            try {
+                url = new URL(urlInput.value);
+                if (!url.protocol.startsWith('http')) {
+                    throw new Error('URL must use HTTP or HTTPS protocol');
+                }
+            } catch (error) {
+                alert('Please enter a valid URL starting with http:// or https://');
+                return;
+            }
+
             // Clear previous status
             status.className = 'status';
             status.textContent = 'Testing...';
 
-            // Load the URL in the iframe
-            iframe.src = urlInput.value;
+            // Load the validated URL in the iframe
+            iframe.src = url.href;
 
             // Listen for load events
             iframe.onload = () => {
-                status.textContent = 'The website appears to be VULNERABLE to clickjacking! ' +
-                    'The page could be loaded in an iframe, which means it might be susceptible to UI redressing attacks.';
-                status.className = 'status vulnerable';
+                try {
+                    // Try to access iframe content - this will throw if blocked
+                    const frameContent = iframe.contentWindow.location.href;
+                    status.textContent = 'The website appears to be VULNERABLE to clickjacking! ' +
+                        'The page could be loaded in an iframe, which means it might be susceptible to UI redressing attacks.';
+                    status.className = 'status vulnerable';
+                } catch (e) {
+                    // If we can't access the frame content, it's protected
+                    handleFrameError();
+                }
             };
 
             iframe.onerror = () => {
